@@ -11,20 +11,42 @@ public class BenchmarkImplementation
 {
     private int[] _array = Array.Empty<int>();
     private readonly Random _random = new();
-    
-    [Params(1, 10, 100, 1000, 10000)]
+
+    [Params(1, 10, 100, 1000, 10000)] 
     public int Length { get; set; }
 
-    [Params(true, false)]
-    public bool ContainsDuplicates { get; set; }
+    [Params(
+        DuplicatesBehavior.NoDuplicates,
+        DuplicatesBehavior.Random,
+        DuplicatesBehavior.Near,
+        DuplicatesBehavior.Far
+    )]
+    public DuplicatesBehavior DuplicatesBehavior { get; set; }
 
     [GlobalSetup]
     public void Setup()
     {
-        var fixedRandom = _random.Next();
-        _array = Enumerable.Range(0, Length)
-            .Select(_ => ContainsDuplicates ? _random.Next() : fixedRandom)
-            .ToArray();
+        switch (DuplicatesBehavior)
+        {
+            case DuplicatesBehavior.NoDuplicates:
+                _array = Enumerable.Range(0, Length).ToArray();
+                break;
+            case DuplicatesBehavior.Random:
+                _array = Enumerable.Range(0, Length)
+                    .Select(_ => _random.Next())
+                    .ToArray();
+                break;
+            case DuplicatesBehavior.Near:
+                _array = Enumerable.Range(0, Length).ToArray();
+                if (Length >= 2) _array[0] = _array.Skip(1).First();
+                break;
+            case DuplicatesBehavior.Far:
+                _array = Enumerable.Range(0, Length).ToArray();
+                if (Length >= 2) _array[0] = _array.Last();
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
     }
 
     [Benchmark(Baseline = true)]
